@@ -7,9 +7,9 @@
 void kernel_weights(double *X, int *p, int *n, double *phi, double *w) {
   int i, j, k, l;
   double sos;
-  k = 1;
+  k = 0;
   for (i=0; i<*n-1; i++)
-    for (j=i; j<*n; j++) {
+    for (j=i+1; j<*n; j++) {
       sos = 0.;
       for (l=0; l<*p; l++)
 	sos += pow(X[l + (*p)*i]-X[l + (*p)*j],2.);

@@ -82,7 +82,7 @@ cvxclust_ama <- function(X,Lambda,ix,M1,M2,s1,s2,w,gamma,nu,max_iter=1e2,tol=1e-
     fxname <- 'convex_cluster_ama'
   }  
   
-  sol = .C(fxname,X=X,Lambda=Lambda,U=U,V=V,p=p,n=n,nK=nK,ix=ix,w=w,gamma=gamma,nu=nu,
+  sol <- .C(fxname,X=X,Lambda=Lambda,U=U,V=V,p=p,n=n,nK=nK,ix=ix,w=w,gamma=gamma,nu=nu,
                  s1=s1,s2=s2,M1=M1,M2=M2,mix1=mix1,mix2=mix2,primal=primal,dual=dual,
                  max_iter=max_iter,iter=integer(1),tol=tol)
   return(list(U=sol$U,V=sol$V,Lambda=sol$Lambda,nu=sol$nu,

@@ -6,23 +6,23 @@
 #' 
 #' @param w A vector of nonnegative weights. The ith entry \code{w[i]} denotes the weight used between the ith pair of centroids. The weights are in dictionary order.
 #' @param k The number of nearest neighbors
-#' @param p The number of data points.
+#' @param n The number of data points.
 #' @author Eric C. Chi, Kenneth Lange
 #' @export
 #' @return A vector \cite{w} of weights for convex clustering.
-knn_weights <- function(w,k,p) {
+knn_weights <- function(w,k,n) {
   i <- 1
-  neighbors <- tri2vec(i,(i+1):p,p)
+  neighbors <- tri2vec(i,(i+1):n,n)
   keep <- neighbors[sort(w[neighbors],decreasing=TRUE,index.return=TRUE)$ix[1:k]]
-  for (i in 2:(p-1)) {
-    group_A <- tri2vec(i,(i+1):p,p)
-    group_B <- tri2vec(1:(i-1),i,p)
+  for (i in 2:(n-1)) {
+    group_A <- tri2vec(i,(i+1):n,n)
+    group_B <- tri2vec(1:(i-1),i,n)
     neighbors <- c(group_A,group_B)
     knn <- neighbors[sort(w[neighbors],decreasing=TRUE,index.return=TRUE)$ix[1:k]]
     keep <- union(knn,keep)
   }
-  i <- p
-  neighbors <- tri2vec(1:(i-1),i,p)
+  i <- n
+  neighbors <- tri2vec(1:(i-1),i,n)
   knn <- neighbors[sort(w[neighbors],decreasing=TRUE,index.return=TRUE)$ix[1:k]]
   keep <- union(knn,keep)
   w[-keep] <- 0
@@ -39,17 +39,15 @@ knn_weights <- function(w,k,p) {
 #' @param X The data matrix to be clustered. The rows are the features, and the columns are the samples.
 #' @param phi The nonnegative parameter that controls the scale of kernel weights
 #' @author Eric C. Chi, Kenneth Lange
+#' @useDynLib cvxclustr
 #' @export
 #' @return A vector \cite{w} of weights for convex clustering.
-kernel_weights <- function(X,phi) {
-  p <- ncol(X)
-  k <- 1
-  w <- matrix(0,p*(p-1)/2,1)
-  for (i in 1:(p-1)) {
-    for (j in (i+1):p) {
-      w[k] <- exp(-phi*norm(as.matrix(X[,i,drop=FALSE]-X[,j,drop=FALSE]),'f')^2)
-      k <- k+1
-    }
-  }
-  return(weights=w)
+kernel_weights <- function(X,phi=1) {
+  storage.mode(X) <- "double"
+  p <- as.integer(nrow(X))
+  n <- as.integer(ncol(X))
+  phi <- as.double(phi)
+  w <- double(n*(n-1)/2)    
+  sol <- .C('kernel_weights',X=X,p=p,n=n,phi=phi,w=w)
+  return(weights=sol$w)
 }
