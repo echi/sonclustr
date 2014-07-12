@@ -4,7 +4,7 @@
 \title{Convex clustering via ADMM}
 \usage{
 cvxclust_admm(X, Lambda, ix, M1, M2, s1, s2, w, gamma, nu, max_iter = 100,
-  tol_abs = 1e-05, tol_rel = 1e-04, accelerate = TRUE)
+  type = 2, tol_abs = 1e-05, tol_rel = 1e-04, accelerate = TRUE)
 }
 \arguments{
 \item{X}{The p-by-n data matrix whose columns are to be clustered.}
@@ -28,6 +28,8 @@ cvxclust_admm(X, Lambda, ix, M1, M2, s1, s2, w, gamma, nu, max_iter = 100,
 \item{nu}{Augmented Lagrangian penalty parameter}
 
 \item{max_iter}{The maximum number of iterations.}
+
+\item{type}{An integer indicating the norm used: 1 = 1-norm, 2 = 2-norm.}
 
 \item{tol_abs}{The convergence tolerance (absolute).}
 

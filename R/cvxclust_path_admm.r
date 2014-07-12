@@ -13,6 +13,7 @@
 #' @param tol_abs The convergence tolerance (absolute).
 #' @param tol_rel The convergence tolerance (relative).
 #' @param max_iter The maximum number of iterations.
+#' @param type An integer indicating the norm used: 1 = 1-norm, 2 = 2-norm.
 #' @param accelerate If \code{TRUE} (the default), acceleration is turned on.
 #' @return \code{U} A list of centroid matrices.
 #' @return \code{V} A list of centroid difference matrices.
@@ -60,7 +61,7 @@
 #' data_plot <- data_plot + geom_point(data=X_data,aes(x=x,y=y),size=1.5)
 #' data_plot <- data_plot + xlab('Principal Component 1') + ylab('Principal Component 2')
 #' data_plot + theme_bw()
-cvxclust_path_admm <- function(X,w,gamma,nu=1,tol_abs=1e-5,tol_rel=1e-4,max_iter=1e4,accelerate=TRUE) {
+cvxclust_path_admm <- function(X,w,gamma,nu=1,tol_abs=1e-5,tol_rel=1e-4,max_iter=1e4,type=2,accelerate=TRUE) {
   call <- match.call()
   nGamma <- length(gamma)
   n <- ncol(X)
@@ -82,7 +83,7 @@ cvxclust_path_admm <- function(X,w,gamma,nu=1,tol_abs=1e-5,tol_rel=1e-4,max_iter
 #  print("---------------------------------------------------------")    
   for (ig in 1:nGamma) {
     gam <- gamma[ig]
-    cc <- cvxclust_admm(X,Lambda,ix-1,M1-1,M2-1,s1,s2,w,gam,nu=nu,max_iter=max_iter,tol_abs=tol_abs,tol_rel=tol_rel,accelerate=accelerate)
+    cc <- cvxclust_admm(X,Lambda,ix-1,M1-1,M2-1,s1,s2,w,gam,nu=nu,max_iter=max_iter,type=type,tol_abs=tol_abs,tol_rel=tol_rel,accelerate=accelerate)
     iter_vec[ig] <- cc$iter
     Lambda <- cc$Lambda
     V <- cc$V

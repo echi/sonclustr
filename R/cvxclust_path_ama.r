@@ -13,6 +13,7 @@
 #' @param nu The initial step size parameter when backtracking is applied. Otherwise it is a fixed step size in which case there are no guarantees of convergence if it exceeds \code{2/ncol(X)}.
 #' @param tol The convergence tolerance.
 #' @param max_iter The maximum number of iterations.
+#' @param type An integer indicating the norm used: 1 = 1-norm, 2 = 2-norm.
 #' @param accelerate If \code{TRUE} (the default), acceleration is turned on.
 #' @return \code{U} A list of centroid matrices.
 #' @return \code{V} A list of centroid difference matrices.
@@ -61,7 +62,7 @@
 #' data_plot <- data_plot + geom_point(data=X_data,aes(x=x,y=y),size=1.5)
 #' data_plot <- data_plot + xlab('Principal Component 1') + ylab('Principal Component 2')
 #' data_plot + theme_bw()
-cvxclust_path_ama <- function(X,w,gamma,nu=1,tol=1e-3,max_iter=1e4,accelerate=TRUE) {
+cvxclust_path_ama <- function(X,w,gamma,nu=1,tol=1e-3,max_iter=1e4,type=2,accelerate=TRUE) {
   call <- match.call()
   nGamma <- length(gamma)
   n <- ncol(X)
@@ -82,7 +83,7 @@ cvxclust_path_ama <- function(X,w,gamma,nu=1,tol=1e-3,max_iter=1e4,accelerate=TR
 #  print("---------------------------------------------------------")  
   for (ig in 1:nGamma) {
     gam <- gamma[ig]      
-    cc <- cvxclust_ama(X,Lambda,ix-1,M1-1,M2-1,s1,s2,w[w>0],gam,nu,max_iter=max_iter,tol=tol,
+    cc <- cvxclust_ama(X,Lambda,ix-1,M1-1,M2-1,s1,s2,w[w>0],gam,nu,type=type,max_iter=max_iter,tol=tol,
                       accelerate=accelerate)
     iter_vec[ig] <- cc$iter
     nu <- cc$nu

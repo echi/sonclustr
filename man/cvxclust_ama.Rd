@@ -3,8 +3,8 @@
 \alias{cvxclust_ama}
 \title{Convex clustering via AMA}
 \usage{
-cvxclust_ama(X, Lambda, ix, M1, M2, s1, s2, w, gamma, nu, max_iter = 100,
-  tol = 1e-04, accelerate = TRUE)
+cvxclust_ama(X, Lambda, ix, M1, M2, s1, s2, w, gamma, nu, type = 2,
+  max_iter = 100, tol = 1e-04, accelerate = TRUE)
 }
 \arguments{
 \item{X}{The p-by-n data matrix whose columns are to be clustered.}
@@ -26,6 +26,8 @@ cvxclust_ama(X, Lambda, ix, M1, M2, s1, s2, w, gamma, nu, max_iter = 100,
 \item{gamma}{The regularization parameter controlling the amount of shrinkage.}
 
 \item{nu}{The initial step size parameter when backtracking is applied. Otherwise it is a fixed step size in which case there are no guarantees of convergence if it exceeds \code{2/ncol(X)}.}
+
+\item{type}{An integer indicating the norm used: 1 = 1-norm, 2 = 2-norm.}
 
 \item{max_iter}{The maximum number of iterations.}
 

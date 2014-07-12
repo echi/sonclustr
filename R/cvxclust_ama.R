@@ -19,6 +19,7 @@
 #' @param w A vector of k positive weights.
 #' @param gamma The regularization parameter controlling the amount of shrinkage.
 #' @param nu The initial step size parameter when backtracking is applied. Otherwise it is a fixed step size in which case there are no guarantees of convergence if it exceeds \code{2/ncol(X)}.
+#' @param type An integer indicating the norm used: 1 = 1-norm, 2 = 2-norm.
 #' @param max_iter The maximum number of iterations.
 #' @param tol The convergence tolerance.
 #' @param accelerate If \code{TRUE} (the default), acceleration is turned on.
@@ -52,9 +53,11 @@
 #' max_iter <- 1e6
 #' tol <- 1e-15
 #' sol_ama <- cvxclust_ama(X,Lambda,ix,M1,M2,s1,s2,w,gamma,nu,max_iter=max_iter,tol=tol)
-cvxclust_ama <- function(X,Lambda,ix,M1,M2,s1,s2,w,gamma,nu,max_iter=1e2,tol=1e-4,accelerate=TRUE) {
+cvxclust_ama <- function(X,Lambda,ix,M1,M2,s1,s2,w,gamma,nu,type=2,max_iter=1e2,tol=1e-4,accelerate=TRUE) {
   p <- as.integer(nrow(X))
   n <- as.integer(ncol(X))
+  if (!is.null(type) && !(type %in% c(1,2)))
+    stop("type must be 1, 2, or NULL. Only 1-norm and 2-norm penalties are currently supported.")
   nK <- as.integer(ncol(Lambda))
   mix1 <- as.integer(nrow(M1))
   mix2 <- as.integer(nrow(M2))
@@ -82,7 +85,8 @@ cvxclust_ama <- function(X,Lambda,ix,M1,M2,s1,s2,w,gamma,nu,max_iter=1e2,tol=1e-
     fxname <- 'convex_cluster_ama'
   }  
   
-  sol <- .C(fxname,X=X,Lambda=Lambda,U=U,V=V,p=p,n=n,nK=nK,ix=ix,w=w,gamma=gamma,nu=nu,
+  type <- as.integer(type)
+  sol <- .C(fxname,X=X,Lambda=Lambda,U=U,V=V,p=p,n=n,nK=nK,ix=ix,w=w,gamma=gamma,nu=nu,type=type,
                  s1=s1,s2=s2,M1=M1,M2=M2,mix1=mix1,mix2=mix2,primal=primal,dual=dual,
                  max_iter=max_iter,iter=integer(1),tol=tol)
   return(list(U=sol$U,V=sol$V,Lambda=sol$Lambda,nu=sol$nu,

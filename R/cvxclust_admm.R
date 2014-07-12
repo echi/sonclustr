@@ -20,6 +20,7 @@
 #' @param gamma The regularization parameter controlling the amount of shrinkage.
 #' @param nu Augmented Lagrangian penalty parameter
 #' @param max_iter The maximum number of iterations.
+#' @param type An integer indicating the norm used: 1 = 1-norm, 2 = 2-norm.
 #' @param tol_abs The convergence tolerance (absolute).
 #' @param tol_rel The convergence tolerance (relative).
 #' @param accelerate If \code{TRUE} (the default), acceleration is turned on.
@@ -63,9 +64,11 @@
 #'   sol_admm <- cvxclust_admm(X,Lambda,ix,M1,M2,s1,s2,w,gamma,nu,max_iter=max_iter,tol_abs=tol_abs,tol_rel=tol_rel,accelerate=FALSE)
 #'   errors[i] <- norm(as.matrix(sol_admm_acc$U-sol_admm$U),'i')
 #' }
-cvxclust_admm <- function(X,Lambda,ix,M1,M2,s1,s2,w,gamma,nu,max_iter=1e2,tol_abs=1e-5,tol_rel=1e-4,accelerate=TRUE) {
+cvxclust_admm <- function(X,Lambda,ix,M1,M2,s1,s2,w,gamma,nu,max_iter=1e2,type=2,tol_abs=1e-5,tol_rel=1e-4,accelerate=TRUE) {
   p <- as.integer(nrow(X))
   n <- as.integer(ncol(X))
+  if (!is.null(type) && !(type %in% c(1,2)))
+    stop("type must be 1, 2, or NULL. Only 1-norm and 2-norm penalties are currently supported.")  
   nK <- as.integer(ncol(Lambda))
   mix1 <- as.integer(nrow(M1))
   mix2 <- as.integer(nrow(M2))
@@ -83,6 +86,7 @@ cvxclust_admm <- function(X,Lambda,ix,M1,M2,s1,s2,w,gamma,nu,max_iter=1e2,tol_ab
   w <- as.double(w)
   gamma <- as.double(gamma)
   nu <- as.double(nu)
+  type <- as.integer(type)  
   max_iter <- as.integer(max_iter)
   tol_abs <- as.double(tol_abs)
   tol_rel <- as.double(tol_rel)
@@ -96,7 +100,7 @@ cvxclust_admm <- function(X,Lambda,ix,M1,M2,s1,s2,w,gamma,nu,max_iter=1e2,tol_ab
     fxname = 'convex_cluster_admm'
   }  
   
-  sol = .C(fxname,X=X,Lambda=Lambda,U=U,V=V,p=p,n=n,nK=nK,ix=ix,w=w,gamma=gamma,nu=nu,
+  sol = .C(fxname,X=X,Lambda=Lambda,U=U,V=V,p=p,n=n,nK=nK,ix=ix,w=w,gamma=gamma,nu=nu,type=type,
            s1=s1,s2=s2,M1=M1,M2=M2,mix1=mix1,mix2=mix2,primal=primal,dual=dual,
            tol_primal=tol_primal,tol_dual=tol_dual,
            max_iter=max_iter,iter=integer(1),tol_abs=tol_abs,tol_rel=tol_rel)

@@ -1,3 +1,68 @@
+#' Projection mapping
+#' 
+#' \code{project} computes the projection onto a norm ball of radius tau.
+#' 
+#' @param x The data vector
+#' @param tau projection parameter
+#' @param type Integer (1 = Infinity-norm, 2 = 2-norm)
+#' @author Eric C. Chi, Kenneth Lange
+#' @useDynLib cvxclustr
+#' @export
+#' @examples
+#' set.seed(12345)
+#' n <- 100
+#' x <- rnorm(n)
+#' tau <- 1.03
+#' px1 <- proj(x,tau,1)
+#' 
+#' px2 <- project(x,tau,2)
+project <- function(x,tau,type=2) {
+  x <- as.double(x)
+  n <- as.integer(length(x))
+  tau <- as.double(tau)
+  type <- as.integer(type)
+  sol <- .C('proj',x=x,n=n,px=double(n),tau=tau,type=type)
+  return(sol$px)
+}
+
+#' Proximal mapping
+#' 
+#' \code{prox} computes the proximal mapping for various norms.
+#' 
+#' @param x The data vector
+#' @param tau proximal parameter
+#' @param type Integer (1 = 1-norm, 2 = 2-norm)
+#' @author Eric C. Chi, Kenneth Lange
+#' @useDynLib cvxclustr
+#' @export
+#' @examples
+#' set.seed(12345)
+#' n <- 100
+#' x <- rnorm(n)
+#' tau <- 1.03
+#' px1 <- prox(x,tau,1)
+#' 
+#' z <- abs(x) - tau
+#' z[z < 0] <- 0
+#' z <- sign(x)*z
+#' 
+#' px2 <- prox(x,tau,2)
+#' 
+#' lv <- norm(as.matrix(x),'F')
+#' if (lv > 0) {
+#'   z <- max(0,1 - tau/lv)*x
+#' } else {
+#'   z <- double(length(x))
+#' }
+prox <- function(x,tau,type=2) {
+  x <- as.double(x)
+  n <- as.integer(length(x))
+  tau <- as.double(tau)
+  type <- as.integer(type)
+  sol <- .C('prox',x=x,n=n,px=double(n),tau=tau,type=type)
+  return(sol$px)
+}
+
 ## Clusterpath preprocessing
 tri2vec <- cmpfun(function(i,j,n) {
   return(n*(i-1) - i*(i-1)/2 + j -i)

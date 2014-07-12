@@ -4,7 +4,7 @@
 \title{Convex Clustering Path via ADMM}
 \usage{
 cvxclust_path_admm(X, w, gamma, nu = 1, tol_abs = 1e-05, tol_rel = 1e-04,
-  max_iter = 10000, accelerate = TRUE)
+  max_iter = 10000, type = 2, accelerate = TRUE)
 }
 \arguments{
 \item{X}{The data matrix to be clustered. The rows are the features, and the columns are the samples.}
@@ -20,6 +20,8 @@ cvxclust_path_admm(X, w, gamma, nu = 1, tol_abs = 1e-05, tol_rel = 1e-04,
 \item{tol_rel}{The convergence tolerance (relative).}
 
 \item{max_iter}{The maximum number of iterations.}
+
+\item{type}{An integer indicating the norm used: 1 = 1-norm, 2 = 2-norm.}
 
 \item{accelerate}{If \code{TRUE} (the default), acceleration is turned on.}
 }

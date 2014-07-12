@@ -18,7 +18,7 @@ void kernel_weights(double *X, int *p, int *n, double *phi, double *w) {
     }
 }
 
-void loss_primal(double *X, double *U, double *gamma, int *ix, int *n, int *p, int *nK,
+void loss_primal_L2(double *X, double *U, double *gamma, int *ix, int *n, int *p, int *nK,
 		   double *w, double *output) {  
   const int one = 1;
   int j,k;
@@ -36,13 +36,25 @@ void loss_primal(double *X, double *U, double *gamma, int *ix, int *n, int *p, i
   for (j = 0; j < *p; j++)
     for (k = 0; k < *n; k++)
       temp += pow(X[k*(*p)+j] - U[k*(*p)+j],2.);
-  /*
-  printf("gamma = %g\n",*gamma);
-  printf("penalty = %g\n",penalty);
-  printf("temp = %g\n",temp);
-  */
   *output = 0.5*temp + (*gamma)*penalty;
   free(dU);
+}
+
+void loss_primal_L1(double *X, double *U, double *gamma, int *ix, int *n, int *p, int *nK,
+		 double *w, double *output) {
+  int j,k;
+  double penalty = 0.;
+  double temp = 0.;
+
+  for (k = 0; k < *nK; k++)
+    for (j = 0; j < *p; j++)
+      penalty += fabs(U[(*p)*ix[k]+j] - U[(*p)*ix[*nK+k]+j]);
+
+  for (j = 0; j < *p; j++)
+    for (k = 0; k < *n; k++)
+      temp += pow(X[k*(*p)+j] - U[k*(*p)+j],2.);
+  *output = 0.5*temp + (*gamma)*penalty;
+
 }
 
 void loss_dual(double *X, double *Lambda, int *ix, int *n, int *p, int *nK,
@@ -73,12 +85,24 @@ void loss_dual(double *X, double *Lambda, int *ix, int *n, int *p, int *nK,
   *output = -0.5*first_term - second_term;
 }
 
+void prox_L1(double *x, int n, double *px, double tau) {
+  int i;
+  double y;
+  
+  for (i=0; i<n; i++) {
+    y = x[i];
+    px[i] = 0.0;
+    if (y > tau)
+      px[i] = y - tau;
+    else if (y < -tau)
+      px[i] = y + tau;
+  }
+}
+
 void prox_L2(double *x, int n, double *px, double tau) {
-  //  const int one = 1;
   int i;
   double lv;
   
-  //  lv = dnrm2_(&n,x,&one);
   lv = 0.0;
   for (i=0; i<n; i++)
     lv += pow(x[i],2.0);
@@ -89,6 +113,15 @@ void prox_L2(double *x, int n, double *px, double tau) {
   else
     for (i=0; i<n; i++)
       px[i] = fmax(0.,1.-(tau/lv))*x[i];  
+}
+
+void prox(double *x, int *n, double *px, double *tau, int *type) {
+  void (*my_prox)(double*,int,double*,double);
+  if (*type == 1)
+    my_prox = &prox_L1;
+  else
+    my_prox = &prox_L2;
+  my_prox(x,*n,px,*tau);
 }
 
 void update_U_ama(double *X, double *Lambda, double *U, int *M1, int* M2, int *s1, int *s2,
@@ -110,7 +143,7 @@ void update_U_ama(double *X, double *Lambda, double *U, int *M1, int* M2, int *s
   }
 }
 
-void update_V(double *U, double *Lambda, double *V, double *w,
+void update_V_L2(double *U, double *Lambda, double *V, double *w,
 	      double *gamma, double *nu, int *ix, int *p, int *nK) {
   
   int i, j, k, kk;
@@ -123,10 +156,28 @@ void update_V(double *U, double *Lambda, double *V, double *w,
     for (k=0; k<*p; k++)
       z[k] = U[k + i*(*p)] - U[k + j*(*p)] - (1.0/(*nu))*Lambda[k + kk*(*p)];
     prox_L2(z,*p,zz,w[kk]*(*gamma)/(*nu));
-    //    prox_L2(z,*p,&V[kk*(*p)],w[kk]*(*gamma)/(*nu));
     for (k=0; k<*p; k++)
       V[k + kk*(*p)] = zz[k];
-      //      V[k + kk*(*p)] = (double) k + kk*(*p);
+  }
+  free(z);
+  free(zz);
+}
+
+void update_V_L1(double *U, double *Lambda, double *V, double *w,
+	      double *gamma, double *nu, int *ix, int *p, int *nK) {
+  
+  int i, j, k, kk;
+  double *z = calloc(*p, sizeof(double));
+  double *zz = calloc(*p, sizeof(double));
+  
+  for (kk=0; kk<*nK; kk++) {
+    i = ix[kk];
+    j = ix[*nK+kk];
+    for (k=0; k<*p; k++)
+      z[k] = U[k + i*(*p)] - U[k + j*(*p)] - (1.0/(*nu))*Lambda[k + kk*(*p)];
+    prox_L1(z,*p,zz,w[kk]*(*gamma)/(*nu));
+    for (k=0; k<*p; k++)
+      V[k + kk*(*p)] = zz[k];
   }
   free(z);
   free(zz);
@@ -145,7 +196,40 @@ void proj_L2(double *x, int n, double *proj_x, double tau) {
       proj_x[i] = x[i];
 }
 
+
+void proj_Linf(double *x, int n, double *proj_x, double tau) {
+  int i;
+
+  for (i=0; i<n; i++)
+    proj_x[i] = fmin(fmax(x[i],-tau),tau);
+}
+
+void proj(double *x, int *n, double *px, double *tau, int *type) {
+  void (*my_proj)(double*,int,double*,double);
+  if (*type == 1)
+    my_proj = &proj_Linf;
+  else
+    my_proj = &proj_L2;
+  my_proj(x,*n,px,*tau);
+}
+
 void update_Lambda_ama(double *Lambda, double *U, double *nu, double *gamma,
+			  int *ix, int *p, int *nK, double *w) {
+  int i, j;
+  double *x = calloc(*p, sizeof(double));
+  double *y = calloc(*p, sizeof(double));
+  for (j=0; j<*nK; j++) {
+    for (i=0; i<*p; i++)
+      x[i] = Lambda[i + j*(*p)] - (*nu)*(U[i + ix[j]*(*p)] - U[i + ix[j + (*nK)]*(*p)]);
+    proj_L2(x,*p,y,(*gamma)*w[j]);
+    for (i=0; i<*p; i++)
+      Lambda[i + j*(*p)] = y[i];
+  }
+  free(x);
+  free(y);
+}
+
+void update_Lambda_ama_L2(double *Lambda, double *U, double *nu, double *gamma,
 		   int *ix, int *p, int *nK, double *w) {
   int i, j;
   double *x = calloc(*p, sizeof(double));
@@ -161,21 +245,52 @@ void update_Lambda_ama(double *Lambda, double *U, double *nu, double *gamma,
   free(y);
 }
 
+void update_Lambda_ama_Linf(double *Lambda, double *U, double *nu, double *gamma,
+			  int *ix, int *p, int *nK, double *w) {
+  int i, j;
+  double *x = calloc(*p, sizeof(double));
+  double *y = calloc(*p, sizeof(double));
+  for (j=0; j<*nK; j++) {
+    for (i=0; i<*p; i++)
+      x[i] = Lambda[i + j*(*p)] - (*nu)*(U[i + ix[j]*(*p)] - U[i + ix[j + (*nK)]*(*p)]);
+    proj_Linf(x,*p,y,(*gamma)*w[j]);
+    for (i=0; i<*p; i++)
+      Lambda[i + j*(*p)] = y[i];
+  }
+  free(x);
+  free(y);
+}
+
 void convex_cluster_ama(double *X, double *Lambda, double *U, double *V,
 			int *p, int *n, int *nK, int *ix, double *w,
-			double *gamma, double *nu,
+			double *gamma, double *nu, int *type,
 			int *s1, int *s2, int *M1, int *M2,
 			int *mix1, int *mix2, double *primal, double *dual,
 			int *max_iter, int *iter, double *tol) {
   int ii, its;
   double *Lambda_old = calloc((*p)*(*nK), sizeof(double));
   double fp, fd;
+  void (*update_Lambda)(double*,double*,double*,double*,int*,int*,int*,double*);
+  void (*update_V)(double*,double*,double*,double*,double*,double*,int*,int*,int*);
+  void (*loss_primal)(double*,double*,double*,int*,int*,int*,int*,double*,double*);
 
+  if (*type == 1) {
+    update_Lambda = &update_Lambda_ama_Linf;
+    loss_primal = &loss_primal_L1;
+    update_V = &update_V_L1;
+  }
+  else {
+    update_Lambda = &update_Lambda_ama_L2;
+    loss_primal = &loss_primal_L2;
+    update_V = &update_V_L2;
+  }
+  
   for (its=0; its<*max_iter; its++) {
     for (ii=0; ii<(*p)*(*nK); ii++)
       Lambda_old[ii] = Lambda[ii];
     update_U_ama(X,Lambda_old,U,M1,M2,s1,s2,mix1,mix2,n,p,nK);
-    update_Lambda_ama(Lambda,U,nu,gamma,ix,p,nK,w);
+    //    update_Lambda_ama_Linf(Lambda,U,nu,gamma,ix,p,nK,w);
+    update_Lambda(Lambda,U,nu,gamma,ix,p,nK,w);
     loss_primal(X,U,gamma,ix,n,p,nK,w,&fp);
     primal[its] = fp;
     loss_dual(X,Lambda,ix,n,p,nK,s1,s2,M1,M2,mix1,mix2,&fd);
@@ -190,7 +305,7 @@ void convex_cluster_ama(double *X, double *Lambda, double *U, double *V,
 
 void convex_cluster_ama_acc(double *X, double *Lambda, double *U, double *V,
 			      int *p, int *n, int *nK, int *ix, double *w, double *gamma,
-			      double *nu, int *s1, int *s2, int *M1, int*M2,
+			    double *nu, int* type, int *s1, int *s2, int *M1, int*M2,
 			      int *mix1, int *mix2, double *primal, double *dual, int *max_iter,
 			      int *iter, double *tol) {
 
@@ -198,11 +313,27 @@ void convex_cluster_ama_acc(double *X, double *Lambda, double *U, double *V,
   double *Lambda_old = calloc((*p)*(*nK),sizeof(double));
   double *S = calloc((*p)*(*nK),sizeof(double));
   double fp, fd;
+  void (*update_Lambda)(double*,double*,double*,double*,int*,int*,int*,double*);
+  void (*update_V)(double*,double*,double*,double*,double*,double*,int*,int*,int*);
+  void (*loss_primal)(double*,double*,double*,int*,int*,int*,int*,double*,double*);
+
+  if (*type == 1) {
+    update_Lambda = &update_Lambda_ama_Linf;
+    loss_primal = &loss_primal_L1;
+    update_V = &update_V_L1;
+  }
+  else {
+    update_Lambda = &update_Lambda_ama_L2;
+    loss_primal = &loss_primal_L2;
+    update_V = &update_V_L2;
+  }
+
   for (its=0; its<2; its++) {
     for (i=0; i<(*p)*(*nK); i++)
       Lambda_old[i] = Lambda[i];
     update_U_ama(X,Lambda_old,U,M1,M2,s1,s2,mix1,mix2,n,p,nK);
-    update_Lambda_ama(Lambda,U,nu,gamma,ix,p,nK,w);
+    //    update_Lambda_ama(Lambda,U,nu,gamma,ix,p,nK,w);
+    update_Lambda(Lambda,U,nu,gamma,ix,p,nK,w);
     loss_primal(X,U,gamma,ix,n,p,nK,w,&fp);
     primal[its] = fp;
     loss_dual(X,Lambda,ix,n,p,nK,s1,s2,M1,M2,mix1,mix2,&fd);
@@ -212,7 +343,8 @@ void convex_cluster_ama_acc(double *X, double *Lambda, double *U, double *V,
     for (i=0; i<(*p)*(*nK); i++)
       S[i] = Lambda[i] + ((double)(its-1))/((double)(its+2))*(Lambda[i] - Lambda_old[i]);
     update_U_ama(X,S,U,M1,M2,s1,s2,mix1,mix2,n,p,nK);
-    update_Lambda_ama(S,U,nu,gamma,ix,p,nK,w);
+    //    update_Lambda_ama(S,U,nu,gamma,ix,p,nK,w);
+    update_Lambda(S,U,nu,gamma,ix,p,nK,w);
     for (i=0; i<(*p)*(*nK); i++) {
       Lambda_old[i] = Lambda[i];
       Lambda[i] = S[i];
@@ -401,7 +533,7 @@ void update_Lambda_admm(double *Lambda, double *U,
 }
 
 void convex_cluster_admm(double *X, double *Lambda, double *U, double *V,
-			 int *p, int *n, int *nK, int *ix, double *w, double *gamma, double *nu,
+			 int *p, int *n, int *nK, int *ix, double *w, double *gamma, double *nu, int *type,
 			 int *s1, int *s2, int *M1, int *M2, int *mix1, int *mix2,
 			 double *primal, double *dual, double *tols_primal, double *tols_dual, int *max_iter, int *iter,
 			 double *eps_abs, double *eps_rel) {
@@ -410,6 +542,14 @@ void convex_cluster_admm(double *X, double *Lambda, double *U, double *V,
   double *xbar = calloc(*p,sizeof(double));
   double rp, rd, upsilon, LambdaNorm;
   double tp, td;
+  void (*update_V)(double*,double*,double*,double*,double*,double*,int*,int*,int*);
+
+  if (*type == 1) {
+    update_V = &update_V_L1;
+  }
+  else {
+    update_V = &update_V_L2;
+  }
 
   get_xbar(X,xbar,n,p);
   upsilon = 0.0;
@@ -446,7 +586,7 @@ void convex_cluster_admm(double *X, double *Lambda, double *U, double *V,
 }
 
 void convex_cluster_admm_acc(double *X, double *Lambda, double *U, double *V,
-			 int *p, int *n, int *nK, int *ix, double *w, double *gamma, double *nu,
+			     int *p, int *n, int *nK, int *ix, double *w, double *gamma, double *nu, int *type,
 			 int *s1, int *s2, int *M1, int *M2, int *mix1, int *mix2,
 			 double *primal, double *dual, double *tols_primal, double *tols_dual, int *max_iter, int *iter,
 			 double *eps_abs, double *eps_rel) {
@@ -458,6 +598,14 @@ void convex_cluster_admm_acc(double *X, double *Lambda, double *U, double *V,
   double tp, td;
   double r_last;
   double alpha, alpha_old;
+  void (*update_V)(double*,double*,double*,double*,double*,double*,int*,int*,int*);
+
+  if (*type == 1) {
+    update_V = &update_V_L1;
+  }
+  else {
+    update_V = &update_V_L2;
+  }
 
   r_last = HUGE_VAL;
   alpha_old = 1.;
