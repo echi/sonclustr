@@ -8,7 +8,6 @@ Description: Alternating Minimization Algorithm (AMA) and Alternating Direction
     Method of Multipliers (ADMM) splitting methods for convex clustering.
 Depends:
     R (>= 2.15.2),
-    compiler,
     Matrix,
     igraph
 Suggests:

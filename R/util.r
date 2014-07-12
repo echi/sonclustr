@@ -64,15 +64,50 @@ prox <- function(x,tau,type=2) {
 }
 
 ## Clusterpath preprocessing
-tri2vec <- cmpfun(function(i,j,n) {
+tri2vec <- function(i,j,n) {
   return(n*(i-1) - i*(i-1)/2 + j -i)
-})
+}
 
-vec2tri <- cmpfun(function(k,n) {
+vec2tri <- function(k,n) {
   i <- ceiling(0.5*(2*n-1 - sqrt((2*n-1)^2 - 8*k)))
   j <- k - n*(i-1) + i*(i-1)/2 + i
   return(as.matrix(cbind(i,j)))
-})
+}
+
+#' Compute step size Anderson-Morely upper bound on the largest eigenvalue of the Laplacian
+#' 
+#' \code{AMA_step_size} computes a step size based on the better of two bounds derived by Anderson 
+#' and Morely.
+#' 
+#' @param w vector of weights
+#' @param p number of points to cluster
+#' @export
+#' @examples
+#' data(mammals)
+#' X <- as.matrix(mammals[,-1])
+#' X <- t(scale(X,center=TRUE,scale=FALSE))
+#' n <- ncol(X)
+#' 
+#' ## Pick some weights and a sequence of regularization parameters.
+#' k <- 5
+#' phi <- 0.5
+#' w <- kernel_weights(X,phi)
+#' w <- knn_weights(w,k,n)
+#' AMA_step_size(w,n)
+AMA_step_size <- function(w,n,inflate=1.9999) {
+  ix <- compactify_edges(w,n)$ix
+  nEdges <- nrow(ix)
+  nVertex <- max(ix)
+  deg <- integer(nVertex)
+  for (i in 1:nVertex) {
+    deg[i] <- length(which(ix[,1] == i)) + length(which(ix[,2] == i))
+  }
+  bound <- -Inf
+  for (j in 1:nEdges) {
+    bound <- max(bound,deg[ix[j,1]] + deg[ix[j,2]])
+  }
+  return(inflate/min(bound,nVertex))
+}
 
 #' Construct indices matrices
 #' 
@@ -81,7 +116,6 @@ vec2tri <- cmpfun(function(k,n) {
 #' @param w weights vector
 #' @param n number of points to cluster
 #' @param method 'ama' or 'admm'
-#' @export
 #' @examples
 #' p <- 10
 #' n <- 20
@@ -92,7 +126,7 @@ vec2tri <- cmpfun(function(k,n) {
 #' edge_info <- compactify_edges(w,n,method=method)
 #' method <- 'ama'
 #' edge_info <- compactify_edges(w,n,method=method)
-compactify_edges <- cmpfun(function(w,n,method='ama') {
+compactify_edges <- function(w,n,method='ama') {
   if (!is.null(method) && !(method %in% c("ama","admm")))
     stop("method must be 'ama', 'admm', or NULL.")  
   sizes1 <- double(n)
@@ -124,7 +158,7 @@ compactify_edges <- cmpfun(function(w,n,method='ama') {
   M2 <- M2[1:max(sizes2),,drop=FALSE]
   
   return(list(ix=P,M1=M1,M2=M2,s1=sizes1,s2=sizes2))
-})
+}
 
 #' Create adjacency matrix from V
 #' 

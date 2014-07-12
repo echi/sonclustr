@@ -58,6 +58,10 @@ cvxclust_ama <- function(X,Lambda,ix,M1,M2,s1,s2,w,gamma,nu,type=2,max_iter=1e2,
   n <- as.integer(ncol(X))
   if (!is.null(type) && !(type %in% c(1,2)))
     stop("type must be 1, 2, or NULL. Only 1-norm and 2-norm penalties are currently supported.")
+  if (nu >= 2/n) {
+    warning("The stepsize nu may be too large. Setting it to maximum of 1/n and 1/AnM.")
+    nu <- max(AMA_step_size(w,n),1/n)
+  }
   nK <- as.integer(ncol(Lambda))
   mix1 <- as.integer(nrow(M1))
   mix2 <- as.integer(nrow(M2))

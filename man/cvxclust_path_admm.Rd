@@ -84,6 +84,6 @@ data_plot + theme_bw()
 Eric C. Chi, Kenneth Lange
 }
 \seealso{
-\code{\link{cvxclust_path_ama}} for estimating the clustering path with AMA. \code{\link{kernel_weights}} and \code{\link{knn_weights}} compute useful weights.
+\code{\link[cvxclustr]{cvxclust_path_ama}} for estimating the clustering path with AMA. \code{\link[cvxclustr]{kernel_weights}} and \code{\link[cvxclustr]{knn_weights}} compute useful weights.
 }
 

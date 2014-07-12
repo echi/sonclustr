@@ -21,8 +21,8 @@
 #' @return \code{Lambda} A list of Lagrange multiplier matrices.
 #' @export
 #' @author Eric C. Chi, Kenneth Lange
-#' @seealso \code{\link{cvxclust_path_ama}} and \code{\link{cvxclust_path_admm}} for estimating the clustering path with AMA or ADMM. 
-#' \code{\link{kernel_weights}} and \code{\link{knn_weights}} compute useful weights.
+#' @seealso \code{\link[cvxclustr]{cvxclust_path_ama}} and \code{\link[cvxclustr]{cvxclust_path_admm}} for estimating the clustering path with AMA or ADMM. 
+#' \code{\link[cvxclustr]{kernel_weights}} and \code{\link[cvxclustr]{knn_weights}} compute useful weights.
 #' @examples
 #' ## Clusterpaths for Mammal Dentition
 #' data(mammals)
@@ -69,7 +69,8 @@ cvxclust <- function(X,w,gamma,method="ama",nu=1,tol=1e-3,max_iter=1e4,type=2,ac
   if (method == "ama") {
     cvxclust_obj <- cvxclust_path_ama(X,w,gamma,nu=nu,tol=tol,max_iter=max_iter,type=type,accelerate=accelerate)
   } else {
-    cvxclust_obj <- cvxclust_path_admm(X,w,gamma,nu=nu,tol=tol,max_iter=max_iter,type=type,accelerate=accelerate)
+    cvxclust_obj <- cvxclust_path_admm(X,w,gamma,nu=nu,tol_abs=tol,tol_rel=tol,max_iter=max_iter,type=type,accelerate=accelerate)
   }
+
   return(cvxclust_obj)
 }
