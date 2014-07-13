@@ -115,15 +115,6 @@ void prox_L2(double *x, int n, double *px, double tau) {
       px[i] = fmax(0.,1.-(tau/lv))*x[i];  
 }
 
-void prox(double *x, int *n, double *px, double *tau, int *type) {
-  void (*my_prox)(double*,int,double*,double);
-  if (*type == 1)
-    my_prox = &prox_L1;
-  else
-    my_prox = &prox_L2;
-  my_prox(x,*n,px,*tau);
-}
-
 void update_U_ama(double *X, double *Lambda, double *U, int *M1, int* M2, int *s1, int *s2,
 	      int *mix1, int *mix2, int *n, int *p, int *nK) {
   int ii, jj, kk;
@@ -204,31 +195,6 @@ void proj_Linf(double *x, int n, double *proj_x, double tau) {
     proj_x[i] = fmin(fmax(x[i],-tau),tau);
 }
 
-void proj(double *x, int *n, double *px, double *tau, int *type) {
-  void (*my_proj)(double*,int,double*,double);
-  if (*type == 1)
-    my_proj = &proj_Linf;
-  else
-    my_proj = &proj_L2;
-  my_proj(x,*n,px,*tau);
-}
-
-void update_Lambda_ama(double *Lambda, double *U, double *nu, double *gamma,
-			  int *ix, int *p, int *nK, double *w) {
-  int i, j;
-  double *x = calloc(*p, sizeof(double));
-  double *y = calloc(*p, sizeof(double));
-  for (j=0; j<*nK; j++) {
-    for (i=0; i<*p; i++)
-      x[i] = Lambda[i + j*(*p)] - (*nu)*(U[i + ix[j]*(*p)] - U[i + ix[j + (*nK)]*(*p)]);
-    proj_L2(x,*p,y,(*gamma)*w[j]);
-    for (i=0; i<*p; i++)
-      Lambda[i + j*(*p)] = y[i];
-  }
-  free(x);
-  free(y);
-}
-
 void update_Lambda_ama_L2(double *Lambda, double *U, double *nu, double *gamma,
 		   int *ix, int *p, int *nK, double *w) {
   int i, j;
@@ -289,7 +255,6 @@ void convex_cluster_ama(double *X, double *Lambda, double *U, double *V,
     for (ii=0; ii<(*p)*(*nK); ii++)
       Lambda_old[ii] = Lambda[ii];
     update_U_ama(X,Lambda_old,U,M1,M2,s1,s2,mix1,mix2,n,p,nK);
-    //    update_Lambda_ama_Linf(Lambda,U,nu,gamma,ix,p,nK,w);
     update_Lambda(Lambda,U,nu,gamma,ix,p,nK,w);
     loss_primal(X,U,gamma,ix,n,p,nK,w,&fp);
     primal[its] = fp;
@@ -332,7 +297,6 @@ void convex_cluster_ama_acc(double *X, double *Lambda, double *U, double *V,
     for (i=0; i<(*p)*(*nK); i++)
       Lambda_old[i] = Lambda[i];
     update_U_ama(X,Lambda_old,U,M1,M2,s1,s2,mix1,mix2,n,p,nK);
-    //    update_Lambda_ama(Lambda,U,nu,gamma,ix,p,nK,w);
     update_Lambda(Lambda,U,nu,gamma,ix,p,nK,w);
     loss_primal(X,U,gamma,ix,n,p,nK,w,&fp);
     primal[its] = fp;
@@ -343,7 +307,6 @@ void convex_cluster_ama_acc(double *X, double *Lambda, double *U, double *V,
     for (i=0; i<(*p)*(*nK); i++)
       S[i] = Lambda[i] + ((double)(its-1))/((double)(its+2))*(Lambda[i] - Lambda_old[i]);
     update_U_ama(X,S,U,M1,M2,s1,s2,mix1,mix2,n,p,nK);
-    //    update_Lambda_ama(S,U,nu,gamma,ix,p,nK,w);
     update_Lambda(S,U,nu,gamma,ix,p,nK,w);
     for (i=0; i<(*p)*(*nK); i++) {
       Lambda_old[i] = Lambda[i];

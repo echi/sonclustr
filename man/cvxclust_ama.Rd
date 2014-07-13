@@ -76,7 +76,7 @@ w  <- rnd_problem$w
 nK <- nrow(ix)
 Lambda <- matrix(rnorm(p*nK),p,nK)
 gamma <- 0.1
-nu <- 0.999*2/n
+nu <- 1.999/n
 max_iter <- 1e6
 tol <- 1e-15
 sol_ama <- cvxclust_ama(X,Lambda,ix,M1,M2,s1,s2,w,gamma,nu,max_iter=max_iter,tol=tol)

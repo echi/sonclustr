@@ -21,6 +21,7 @@
 #' @export
 #' @author Eric C. Chi, Kenneth Lange
 #' @seealso \code{\link[cvxclustr]{cvxclust_path_admm}} for estimating the clustering path with ADMM. \code{\link[cvxclustr]{kernel_weights}} and \code{\link[cvxclustr]{knn_weights}} compute useful weights.
+#' To extract cluster assignments from the clustering path use \code{\link[cvxclustr]{create_adjacency}} and \code{\link[cvxclustr]{find_clusters}}.
 #' @examples
 #' ## Clusterpaths for Mammal Dentition
 #' data(mammals)
@@ -62,6 +63,14 @@
 #' data_plot <- data_plot + geom_point(data=X_data,aes(x=x,y=y),size=1.5)
 #' data_plot <- data_plot + xlab('Principal Component 1') + ylab('Principal Component 2')
 #' data_plot + theme_bw()
+#' 
+#' ## Output Cluster Assignment at 10th gamma
+#' A <- create_adjacency(sol$V[[10]],w,n)
+#' find_clusters(A)
+#' 
+#' ## Visualize Cluster Assignment
+#' G <- graph.adjacency(A, mode = 'upper')
+#' plot(G,vertex.label=as.character(mammals[,1]),vertex.label.cex=0.65,vertex.label.font=2)
 cvxclust_path_ama <- function(X,w,gamma,nu=1,tol=1e-3,max_iter=1e4,type=2,accelerate=TRUE) {
   call <- match.call()
   nGamma <- length(gamma)

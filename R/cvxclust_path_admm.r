@@ -21,6 +21,7 @@
 #' @export
 #' @author Eric C. Chi, Kenneth Lange
 #' @seealso \code{\link[cvxclustr]{cvxclust_path_ama}} for estimating the clustering path with AMA. \code{\link[cvxclustr]{kernel_weights}} and \code{\link[cvxclustr]{knn_weights}} compute useful weights.
+#' To extract cluster assignments from the clustering path use \code{\link[cvxclustr]{create_adjacency}} and \code{\link[cvxclustr]{find_clusters}}.
 #' @examples
 #' ## Clusterpaths for Mammal Dentition
 #' data(mammals)
@@ -61,6 +62,14 @@
 #' data_plot <- data_plot + geom_point(data=X_data,aes(x=x,y=y),size=1.5)
 #' data_plot <- data_plot + xlab('Principal Component 1') + ylab('Principal Component 2')
 #' data_plot + theme_bw()
+#' 
+#' ## Output Cluster Assignment at 10th gamma
+#' A <- create_adjacency(sol$V[[10]],w,n)
+#' find_clusters(A)
+#' 
+#' ## Visualize Cluster Assignment
+#' G <- graph.adjacency(A, mode = 'upper')
+#' plot(G,vertex.label=as.character(mammals[,1]),vertex.label.cex=0.65,vertex.label.font=2)
 cvxclust_path_admm <- function(X,w,gamma,nu=1,tol_abs=1e-5,tol_rel=1e-4,max_iter=1e4,type=2,accelerate=TRUE) {
   call <- match.call()
   nGamma <- length(gamma)
@@ -79,8 +88,6 @@ cvxclust_path_admm <- function(X,w,gamma,nu=1,tol_abs=1e-5,tol_rel=1e-4,max_iter
   s1 <- edge_info$s1
   s2 <- edge_info$s2
   iter_vec <- integer(nGamma)  
-#  print("gamma    its | primal res      dual res      max res     ")
-#  print("---------------------------------------------------------")    
   for (ig in 1:nGamma) {
     gam <- gamma[ig]
     cc <- cvxclust_admm(X,Lambda,ix-1,M1-1,M2-1,s1,s2,w,gam,nu=nu,max_iter=max_iter,type=type,tol_abs=tol_abs,tol_rel=tol_rel,accelerate=accelerate)
@@ -90,13 +97,6 @@ cvxclust_path_admm <- function(X,w,gamma,nu=1,tol_abs=1e-5,tol_rel=1e-4,max_iter
     list_U[[ig]] <- cc$U
     list_V[[ig]] <- V
     list_Lambda[[ig]] <- Lambda 
- #   print(sprintf("%5d  %5d | %5f        %5f      %7f", ig, cc$iter, signif(cc$primal[cc$iter],4),
- #                 signif(cc$dual[cc$iter],4),
- #                 signif(max(cc$primal[cc$iter],cc$dual[cc$iter]),4)))    
-    #    if (norm(cc$V,'1')==0) {
-    #      print('Single cluster')
-    #      break
-    #    }
   }
   cvxclust_obj <- list(U=list_U,V=list_V,Lambda=list_Lambda,nGamma=ig,iters=iter_vec,call=call)
   class(cvxclust_obj) <- "cvxclustobject"
