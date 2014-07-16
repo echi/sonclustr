@@ -51,3 +51,39 @@ kernel_weights <- function(X,phi=1) {
   sol <- .C('kernel_weights',X=X,p=p,n=n,phi=phi,w=w)
   return(weights=sol$w)
 }
+
+#' Weights Graph Adjacency Matrix
+#' 
+#' Constructs the adjacency matrix of the weights graph. This is useful to determine the connectivity of the weights graph.
+#' 
+#' @param w Weights vector
+#' @param n Number of points being clustered
+#' @export
+#' @examples
+#' ## Clusterpaths for Mammal Dentition
+#' data(mammals)
+#' X <- as.matrix(mammals[,-1])
+#' X <- t(scale(X,center=TRUE,scale=FALSE))
+#' n <- ncol(X)
+#' 
+#' ## Pick some weights and a sequence of regularization parameters.
+#' k <- 5
+#' phi <- 0.5
+#' w <- kernel_weights(X,phi)
+#' w <- knn_weights(w,k,n)
+#' 
+#' A <- weights_graph(w,n)
+#' find_clusters(A)
+#' 
+#' ## Visualize Cluster Assignment
+#' G <- graph.adjacency(A, mode = 'upper')
+#' plot(G,vertex.label=as.character(mammals[,1]),vertex.label.cex=0.65,vertex.label.font=2)
+weights_graph <- function(w,n) {
+  k <- which(w > 0)
+  ix <- vec2tri(which(w>0),n)
+  i <- ix[,1]
+  j <- ix[,2]
+  A <- Matrix(0, nrow = n, ncol = n, sparse = TRUE)
+  A[(j-1)*n + i] <- 1
+  return(A)
+}
