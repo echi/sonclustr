@@ -38,8 +38,8 @@
 #' }
 #' 
 #' @author Eric C. Chi, Kenneth Lange
-#' @references Eric C. Chi, Kenneth Lange (2013). Splitting Methods
-#'   for convex clustering. arXiv: 1304.0499 [stat.ML].
+#' @references Eric C. Chi and Kenneth Lange. Splitting Methods
+#'   for Convex Clustering. Journal of Computational and Graphical Statistics, in press.
 #'   \url{http://arxiv.org/abs/1304.0499}.
 #' @name cvxclustr
 #' @docType package
